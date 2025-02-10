@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Cuentos Personalizados</title>
+  <style>
+    body { font-family: Arial, sans-serif; background-color: #f0f8ff; padding: 20px; }
+    .container { max-width: 600px; margin: auto; }
+    h1 { color: #333; }
+    input, select, button, textarea { width: 100%; padding: 10px; margin: 5px 0; }
+    button { background-color: #4CAF50; color: white; border: none; cursor: pointer; }
+    button:hover { background-color: #45a049; }
+    audio { width: 100%; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Crea tu Cuento Personalizado</h1>
+    <form id="storyForm">
+      <label for="theme">Tema:</label>
+      <input type="text" id="theme" name="theme" required placeholder="Ejemplo: Aventura en el bosque">
+
+      <label for="protagonist">Nombre del Protagonista:</label>
+      <input type="text" id="protagonist" name="protagonist" required placeholder="Ejemplo: Luna">
+
+      <label for="voice">Selecciona la voz:</label>
+      <select id="voice" name="voice">
+        <option value="es-ES-Standard-A">Voz A</option>
+        <option value="es-ES-Standard-B">Voz B</option>
+        <option value="es-ES-Standard-C">Voz C</option>
+      </select>
+
+      <button type="submit">Generar Cuento</button>
+    </form>
+
+    <h2>Tu Cuento:</h2>
+    <textarea id="storyOutput" rows="10" readonly></textarea>
+
+    <button id="playAudio" style="display:none;">Escuchar Cuento</button>
+    <audio id="audioPlayer" controls style="display:none;"></audio>
+  </div>
+
+  <script>
+    document.getElementById('storyForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const theme = document.getElementById('theme').value;
+      const protagonist = document.getElementById('protagonist').value;
+      const voice = document.getElementById('voice').value;
+
+      // Llamada a la API para generar el cuento
+      try {
+        const generateResponse = await fetch('/api/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ theme, protagonist })
+        });
+        const generateData = await generateResponse.json();
+        const story = generateData.story;
+        document.getElementById('storyOutput').value = story;
+
+        // Llamada a la API para convertir el cuento a voz
+        const ttsResponse = await fetch('/api/tts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: story, voice })
+        });
+        const ttsData = await ttsResponse.json();
+        if (ttsData.audioContent) {
+          const audioPlayer = document.getElementById('audioPlayer');
+          audioPlayer.src = 'data:audio/mp3;base64,' + ttsData.audioContent;
+          audioPlayer.style.display = 'block';
+          document.getElementById('playAudio').style.display = 'block';
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        alert('Ocurrió un error al generar el cuento.');
+      }
+    });
+
+    document.getElementById('playAudio').addEventListener('click', function() {
+      const audioPlayer = document.getElementById('audioPlayer');
+      audioPlayer.play();
+    });
+  </script>
+</body>
+</html>
